@@ -504,7 +504,7 @@ function toggleMonkey(){
             <span style="width:1px;height:20px;background:var(--border);display:inline-block"></span>
             <button class="btn btn-sm btn-pri" id="s1f-all" onclick="setS1Filter('all')">全部</button>
             <button class="btn btn-sm btn-gh" id="s1f-active" onclick="setS1Filter('active')">未結清</button>
-            <button class="btn btn-sm btn-gh" id="s1f-settled" onclick="setS1Filter('settled')">已結清</button>
+            <button class="btn btn-sm btn-gh" id="s1f-settled" onclick="setS1Filter('settled')">已結案</button>
           </div>
         </div>
         <div id="s1-list-wrap" style="overflow-x:auto;border:1px solid var(--border);border-radius:10px">
@@ -705,7 +705,7 @@ const db=supabase.createClient(SURL,SKEY);
 pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
 // 帳號改由 Supabase Auth 管理
-const SL=['','已建立','已出貨','已進口','已結清'];
+const SL=['','已建立','已出貨','已進口','已結案'];
 let CU=null,currentRole='admin';
 const S1_PAGE_SIZE=20;
 let s1Orders=[],s1Filter='all',s1MonthFilter='',s1Page=1,s1EditingId=null,s1DetailId=null;
@@ -1127,7 +1127,7 @@ async function saveS1(){
     }catch(e){toast('儲存失敗：'+e.message,'err');}
     finally{setBtnLoad('bs1',false,'💾 儲存訂單');}
   } else if(matchEx.stage===4){
-    alert(`此PO（${matchEx.po_number}）已結清，無法重複建立。`);
+    alert(`此PO（${matchEx.po_number}）已結案，無法重複建立。`);
     clearS1();
     if(fileQueue.length>0) advanceQueue(null);
   } else {
@@ -1204,11 +1204,11 @@ function clearS1MonthFilter(){
 }
 async function unsettle(orderId,po){
   if(currentRole!=='admin'){alert('唯讀帳號無法操作此功能');return;}
-  if(!confirm(`確定要解除此訂單（PO ${po}）的結清狀態嗎？\n解除後訂單將回到「已進口」狀態，所有出貨記錄與付款資料維持原樣不變。`)) return;
+  if(!confirm(`確定要解除此訂單（PO ${po}）的結案狀態嗎？\n解除後訂單將回到「已進口」狀態，所有出貨記錄與付款資料維持原樣不變。`)) return;
   try{
     const {error}=await db.from('orders').update({stage:3,updated_at:now()}).eq('id',orderId);
     if(error) throw error;
-    toast(`訂單 ${po} 已解除結清，回到「已進口」狀態`,'ok');
+    toast(`訂單 ${po} 已解除結案，回到「已進口」狀態`,'ok');
     await loadS1Data();
   }catch(e){toast('操作失敗：'+e.message,'err');}
 }
@@ -1312,7 +1312,7 @@ function openSettleModal(id){
   const shipStatus=ships.length?
     ships.map(s=>`  ${s.shipping_notice_no||'—'}：KTS ${s.kts_payment_date||'未填'}，TL ${s.tl_payment_date||'未填'}`).join('\n')
     :'  無出貨記錄';
-  const msg=`確定要將 PO ${o.po_number} 結案嗎？\n訂單數量：${o.order_qty||'—'}，已出數量：${totalShipped}，未出數量：${unshipped}\n各筆出貨之KTS/TL付款狀態：\n${shipStatus}\n結案後將標記為已結清，無法再修改。`;
+  const msg=`確定要將 PO ${o.po_number} 結案嗎？\n訂單數量：${o.order_qty||'—'}，已出數量：${totalShipped}，未出數量：${unshipped}\n各筆出貨之KTS/TL付款狀態：\n${shipStatus}\n結案後將標記為已結案，無法再修改。`;
   if(!confirm(msg)) return;
   db.from('orders').update({stage:4,updated_at:now()}).eq('id',id).then(({error})=>{
     if(error){toast('結案失敗：'+error.message,'err');return;}
@@ -1357,7 +1357,7 @@ function renderDetailCard(id){
       </table></div>`;
   }
   const settleHtml=settled?
-    `<div class="settle-bar"><span style="font-size:.9rem;color:var(--mu)">狀態：<strong style="color:#6d28d9">已結清</strong></span></div>`:
+    `<div class="settle-bar"><span style="font-size:.9rem;color:var(--mu)">狀態：<strong style="color:#6d28d9">已結案</strong></span></div>`:
     `<div class="settle-bar"><span style="font-size:.9rem;color:var(--mu)">狀態：<strong style="color:var(--tx)">未結清</strong></span><button class="btn btn-ok btn-sm" ${currentRole!=='admin'?'disabled title="唯讀帳號無法操作此功能"':''} onclick="openSettleModal(${o.id})">✅ 結案</button></div>`;
   g('s1-detail-body').innerHTML=infoHtml+shipsHdr+shipsHtml+settleHtml;
   g('s1-detail').style.background=settled?'#f8fafc':'';
@@ -1453,7 +1453,7 @@ function renderS2Items(){
     let st='',stCls='color:var(--mu)';
     if(it.status==='ready'){st='✅ 可儲存';stCls='color:var(--ok);font-weight:700';}
     else if(it.status==='not_found'){st='⚠️ 找不到訂單';stCls='color:#b45309;font-weight:600';}
-    else if(it.status==='stage4'){st='⛔ 已結清';stCls='color:var(--err);font-weight:600';}
+    else if(it.status==='stage4'){st='⛔ 已結案';stCls='color:var(--err);font-weight:600';}
     else if(it.status==='duplicate'){st='⚠️ 已存在';stCls='color:#b45309;font-weight:600';}
     const canCheck=it.status==='ready';
     const cbHtml=canCheck

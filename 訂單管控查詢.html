@@ -614,7 +614,7 @@ function clearFilter(){
 // ── DASHBOARD ──
 function renderDash(){
   const total=allOrders.length;
-  const imported=allOrders.filter(o=>o.stage===3).length;
+  const imported=allOrders.filter(o=>o.stage>=3).length;
   const amt=allOrders.reduce((s,o)=>s+(+o.amount_usd||0),0);
   const iamt=allOrders.reduce((s,o)=>s+(+o.ship_amount||0),0);
   const comm=allOrders.reduce((s,o)=>s+(+o.commission||0),0);
@@ -629,7 +629,7 @@ function renderDash(){
 }
 
 // ── TABLE ──
-const SL=['','已建立','已出貨','已進口','已結清'];
+const SL=['','已建立','已出貨','已進口','已結案'];
 function renderTable(){
   const body=g('tbl-body');
   const total=allOrders.length;
@@ -747,7 +747,7 @@ function exportExcel(){
   if(!allOrders.length){toast('目前沒有資料可匯出','info');return;}
   const headers=['PO號碼','訂單金額USD','ETD','ETA','已出數量','未出數量',
     '報關費NTD','推貿費NTD','3%佣金NTD','KTS入帳日','TL付款日','狀態','建立時間'];
-  const smap=['','已建立','已出貨','已進口','已結清'];
+  const smap=['','已建立','已出貨','已進口','已結案'];
   const rows=allOrders.map(o=>[
     o.po_number||'',o.amount_usd||'',o.etd||'',o.latest_eta||'',
     o.total_shipped||0,o.unshipped||0,
